@@ -1,11 +1,12 @@
-import json
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Self
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from dotenv import dotenv_values
 from pydantic_settings import BaseSettings
+
 
 DIR_PROJECT = Path(__file__).parent
 DIR_SESSIONS = Path('sessions')
@@ -15,6 +16,9 @@ FILEPATH_LOGGER = Path('tg_message_reader.log')
 
 for d in [DIR_SESSIONS]:
     d.mkdir(exist_ok=True)
+
+
+TZ_MOSCOW = ZoneInfo('Europe/Moscow')
 
 
 @dataclass
@@ -41,7 +45,10 @@ class Settings(BaseSettings):
         return cls.model_validate_json(filepath.read_text(encoding='utf-8'))
 
     def convert_datetime(self):
-        self.cbr_rate_datetimes = [datetime.strptime(s, '%d.%m.%Y %H:%M') for s in self.cbr_rate_datetimes]
+        self.cbr_rate_datetimes = [
+            datetime.strptime(s, '%d.%m.%Y %H:%M').replace(tzinfo=TZ_MOSCOW)
+            for s in self.cbr_rate_datetimes
+        ]
 
 
 env = dotenv_values(FILEPATH_ENV)

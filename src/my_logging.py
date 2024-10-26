@@ -2,9 +2,8 @@ import logging
 import sys
 from pathlib import Path
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-TZ_MOSCOW = ZoneInfo('Europe/Moscow')
+from config import TZ_MOSCOW
 
 
 def get_logger(filepath: Path) -> None:

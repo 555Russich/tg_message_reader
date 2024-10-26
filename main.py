@@ -2,24 +2,16 @@ import logging
 import re
 from datetime import datetime, timezone
 
+import pyttsx3
 from telethon import TelegramClient
 from telethon.events import NewMessage
-import pyttsx3
 
-
-from config import FILEPATH_LOGGER
-from config import cfg, settings
-from my_logging import get_logger
+from config import cfg, settings, FILEPATH_LOGGER
+from src.my_logging import get_logger
+from src.schedule import scheduler, setup_scheduler
+from src.speaker import speaker
 
 client = TelegramClient(settings.session_filepath, cfg.api_id, cfg.api_hash,  system_version="4.16.30-vxCUSTOM_qwe")
-
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
-for voice in voices:
-    if voice.name == 'Microsoft Irina Desktop - Russian':
-        engine.setProperty('voice', voice.id)
-engine.setProperty('rate', settings.voice_speed_rate)
-engine.runAndWait()
 
 
 @client.on(NewMessage(chats=settings.chat_ids))
@@ -34,8 +26,8 @@ async def handle_message(event):
     logging.info(f'Received event, parsed {len(parts_to_pronounce)} parts: {parts_to_pronounce}')
 
     text_to_pronounce = ' '.join(parts_to_pronounce)
-    engine.say(text_to_pronounce)
-    engine.runAndWait()
+    speaker.say(text_to_pronounce)
+    speaker.runAndWait()
 
 
 async def main():
@@ -50,9 +42,15 @@ async def main():
         except ValueError:
             logging.warning(f'!!! Could not find entity: {chat_pattern}')
 
+    # async with Scapper() as scrapper:
+    #     await scrapper.get_cb_rate(settings.cbr_rate_datetimes[0])
+
 
 if __name__ == '__main__':
     get_logger(FILEPATH_LOGGER)
+
+    setup_scheduler()
+    scheduler.start()
 
     client.start(phone=settings.phone, password=settings.password)
     with client:
