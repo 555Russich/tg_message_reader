@@ -4,7 +4,6 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-
 TZ_MOSCOW = ZoneInfo('Europe/Moscow')
 
 
@@ -25,3 +24,4 @@ def get_logger(filepath: Path) -> None:
     logging.getLogger('asyncio').setLevel(logging.WARNING)
     logging.getLogger('telethon').setLevel(logging.WARNING)
     logging.getLogger('comtypes').setLevel(logging.WARNING)
+    logging.getLogger('pyrogram').setLevel(logging.WARNING)
