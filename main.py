@@ -49,14 +49,22 @@ async def main():
 if __name__ == '__main__':
     get_logger(FILEPATH_LOGGER)
 
-    setup_scheduler()
-    scheduler.start()
+    # from src.schedule import get_cb_cur_rates_and_represent
+    import asyncio
+    from src.scrapper import scrap_cb_key_rate, get_cb_key_rate
+    from src.my_logging import TZ_MOSCOW
+    dt = datetime(year=2024, month=12, day=20, hour=13, minute=30, tzinfo=TZ_MOSCOW)
+    asyncio.run(get_cb_key_rate(dt_cbr_rate=dt))
 
-    client.start(phone=settings.phone, password=settings.password)
-    with client:
-        try:
-            client.loop.run_until_complete(main())
-            client.run_until_disconnected()
-        finally:
-            logging.info(f'{client.is_connected()=}')
-            client.session.save()
+
+    # setup_scheduler()
+    # scheduler.start()
+    #
+    # client.start(phone=settings.phone, password=settings.password)
+    # with client:
+    #     try:
+    #         client.loop.run_until_complete(main())
+    #         client.run_until_disconnected()
+    #     finally:
+    #         logging.info(f'{client.is_connected()=}')
+    #         client.session.save()

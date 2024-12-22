@@ -1,35 +1,20 @@
 import asyncio
 import logging
-from datetime import datetime
+import re
+from datetime import datetime, timedelta, date, timezone
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
+from pandas import DataFrame
+from tvDatafeed import TvDatafeed, Interval
 
 from config import TZ_MOSCOW
 
 
-async def scrap_cb_rate(session: ClientSession) -> float:
-    async with session.get(url='https://www.cbr.ru/') as r:
-        html = await r.text()
-        soup = BeautifulSoup(html, 'lxml')
-        div_content = soup.find('a', href='/hd_base/KeyRate/').parent.parent
-        divs_rate = div_content.find_all('div', class_='main-indicator_line')
-
-        for div_rate in divs_rate:
-            a_date = div_rate.find('a')
-            date_str = a_date.text.strip().replace('с ', '')
-            rate_date = datetime.strptime(date_str, '%d.%m.%Y').replace(tzinfo=TZ_MOSCOW)
-            rate_str = div_rate.find('div', class_='main-indicator_value').text.strip()
-            rate_value = float(rate_str.replace('%', '').replace(',', '.'))
-
-            if rate_date > datetime.now(tz=TZ_MOSCOW):
-                return rate_value
-
-
-async def get_cb_rate(cbr_rate_dt: datetime):
+async def get_cb_key_rate(dt_cbr_rate: datetime):
     async with ClientSession() as session:
         while True:
-            seconds_left = (cbr_rate_dt - datetime.now(tz=TZ_MOSCOW)).total_seconds()
+            seconds_left = (dt_cbr_rate - datetime.now(tz=TZ_MOSCOW)).total_seconds()
             if seconds_left > 10:
                 sleep_time = 2
             elif seconds_left > 2:
@@ -37,10 +22,26 @@ async def get_cb_rate(cbr_rate_dt: datetime):
             else:
                 sleep_time = 0
 
-            new_cb_rate = await scrap_cb_rate(session)
-            logging.info(f'СТАВКА ЦБ: {new_cb_rate}')
+            new_cb_rate = await scrap_cb_key_rate(session, dt_cbr_rate=dt_cbr_rate)
 
             if isinstance(new_cb_rate, float):
+                logging.info(f'СТАВКА ЦБ: {new_cb_rate}')
                 return new_cb_rate
 
             await asyncio.sleep(sleep_time)
+
+
+async def scrap_cb_key_rate(session: ClientSession, dt_cbr_rate: datetime) -> float:
+    async with session.get(url='https://www.cbr.ru/press/keypr') as r:
+        html = await r.text()
+        soup = BeautifulSoup(html, 'lxml')
+
+    dt_modified_str = soup.find('head').find('meta', attrs={'name': 'zoom:last-modified'}).get('content')
+    dt_modified_utc = datetime.strptime(dt_modified_str, '%a, %d %b %Y %H:%M:%S %Z').replace(tzinfo=timezone.utc)
+    dt_modified_msc = dt_modified_utc.astimezone(tz=TZ_MOSCOW)
+
+    if dt_modified_msc == dt_cbr_rate:
+        title = soup.find('head').find('title').text
+        key_rate = float(re.search(r'(\d+,\d+)(?=%)', title).group(0).replace(',', '.'))
+        return key_rate
+    return False

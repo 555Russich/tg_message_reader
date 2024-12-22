@@ -24,3 +24,4 @@ def get_logger(filepath: Path) -> None:
     logging.getLogger('telethon').setLevel(logging.WARNING)
     logging.getLogger('comtypes').setLevel(logging.WARNING)
     logging.getLogger('pyrogram').setLevel(logging.WARNING)
+    logging.getLogger('TvDatafeed').setLevel(logging.WARNING)
